@@ -70,14 +70,8 @@ def hamming_distance(h1: int, h2: int) -> int:
 
 class SimImg(PluginAfter):
     def __init__(self) -> None:
+        super().__init__()
         self.data = dict()
-
-        def __func(info: Info):
-            if info.TYPE != TYPE.IMAGE:
-                return
-            self.add(info.SRC)
-
-        super().__init__(__func)
 
     def findsim(self, x: int, d: int) -> list:
         return [i for i in self.data if hamming_distance(self.data[i], x) <= d]
@@ -85,12 +79,18 @@ class SimImg(PluginAfter):
     def add(self, pth: str) -> None:
         self.data[pth] = phash64(pth)
 
+    def func(self, info: Info) -> None:
+        if info.TYPE != TYPE.IMAGE:
+            return
+        self.add(info.SRC)
+
 
 LSHBIT = 64
 
 
-class SimImgPlus(PluginAfter):
+class SimImgPlus(SimImg):
     def __init__(self, distance: int = 8) -> None:
+        super().__init__()
         if distance < 0 or distance >= LSHBIT:
             raise ValueError(distance)
         self.distance = distance
@@ -98,14 +98,6 @@ class SimImgPlus(PluginAfter):
         # 4 5 [13 13 13 13 12]
         self.split = list(range(self.m)) * (LSHBIT//self.m + 1)
         self.block = dict()
-        self.data = dict()
-
-        def __func(info: Info):
-            if info.TYPE != TYPE.IMAGE:
-                return
-            self.add(info.SRC)
-
-        super().__init__(__func)
 
     def phash(self, pth: str) -> tuple:
         try:
@@ -125,9 +117,6 @@ class SimImgPlus(PluginAfter):
         for i, j in enumerate(ansl):
             ansl[i] = ansl[i]*self.m + i
         return ans, ansl
-
-    def findsim(self, x: int, d: int) -> list:
-        return [i[1] for i in self.block if hamming_distance(i[0], x) <= d]
 
     def add(self, pth: str) -> None:
         ans, ansl = self.phash(pth)
